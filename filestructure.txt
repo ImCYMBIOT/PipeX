@@ -8,6 +8,10 @@
     |-- transform.py
     |-- utils.py
     |-- __init__.py
+|-- config
+    |-- logging_config.py
+    |-- settings.py
 |-- main.py
 |-- pyproject.toml
+|-- Readme.MD
 |-- requirements.txt
