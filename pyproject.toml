@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "pipelinex"
+version = "0.1.0"
+description = "The Data Pipeline Manager CLI is a command-line tool designed to automate and manage ETL (Extract, Transform, Load) workflows. These workflows are critical in data engineering for moving data from one system to another while applying transformations to make the data more useful."
+authors = ["ImCYMBIOT <agniveshkumar15@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+typer = "0.15.1"
+pandas = "2.2.3"
+SQLAlchemy = "2.0.36"
+boto3 = "1.35.74"
+requests = "2.32.3"
+pyyaml = "6.0.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.3.4"
+black = "24.10.0"
+flake8 = "7.1.1"
+mypy = "1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

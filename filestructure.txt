@@ -1,0 +1,13 @@
+|-- .gitignore
+|-- app
+    |-- api.py
+    |-- cli.py
+    |-- extract.py
+    |-- load.py
+    |-- storage.py
+    |-- transform.py
+    |-- utils.py
+    |-- __init__.py
+|-- main.py
+|-- pyproject.toml
+|-- requirements.txt
