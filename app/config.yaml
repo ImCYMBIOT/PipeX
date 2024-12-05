@@ -1,0 +1,4 @@
+connection_details:
+  headers:
+    Authorization: "Bearer YOUR_API_KEY"
+query_or_endpoint: "https://api.example.com/data"

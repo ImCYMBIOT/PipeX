@@ -2,16 +2,24 @@
 |-- app
     |-- api.py
     |-- cli.py
+    |-- config.yaml
     |-- extract.py
     |-- load.py
     |-- storage.py
     |-- transform.py
     |-- utils.py
     |-- __init__.py
+    |-- __pycache__
+        |-- cli.cpython-311.pyc
+        |-- extract.cpython-311.pyc
+        |-- load.cpython-311.pyc
+        |-- transform.cpython-311.pyc
+        |-- __init__.cpython-311.pyc
 |-- config
     |-- logging_config.py
     |-- settings.py
 |-- main.py
+|-- poetry.lock
 |-- pyproject.toml
 |-- Readme.MD
 |-- requirements.txt
