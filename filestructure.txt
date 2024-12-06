@@ -1,23 +1,29 @@
+|-- .env
 |-- .gitignore
 |-- app
     |-- api.py
     |-- cli.py
     |-- config.yaml
+    |-- data.csv
     |-- extract.py
     |-- load.py
+    |-- mock_api.py
     |-- storage.py
     |-- transform.py
     |-- utils.py
     |-- __init__.py
     |-- __pycache__
         |-- cli.cpython-311.pyc
+        |-- cli.cpython-312.pyc
         |-- extract.cpython-311.pyc
         |-- load.cpython-311.pyc
         |-- transform.cpython-311.pyc
         |-- __init__.cpython-311.pyc
+        |-- __init__.cpython-312.pyc
 |-- config
     |-- logging_config.py
     |-- settings.py
+|-- LICENSE
 |-- main.py
 |-- poetry.lock
 |-- pyproject.toml
@@ -28,3 +34,6 @@
     |-- test_extract.py
     |-- test_load.py
     |-- test_transform.py
+    |-- transform_script.py
+    |-- __pycache__
+        |-- transform_script.cpython-311.pyc

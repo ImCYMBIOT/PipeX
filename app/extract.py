@@ -9,7 +9,7 @@ def extract_data(source_type: str, connection_details: dict, query_or_endpoint: 
         response = requests.get(query_or_endpoint, headers=connection_details.get("headers", {}))
         data = response.json()
         print("Data extracted from API!")
-        return data
+        return pd.DataFrame(data)
 
     elif source_type == "database":
         db_type = connection_details.get("db_type")
@@ -49,9 +49,9 @@ def extract_data(source_type: str, connection_details: dict, query_or_endpoint: 
             data = list(collection.find(query_or_endpoint))
             client.close()
             print("Data extracted from MongoDB!")
-            return data
+            return pd.DataFrame(data)
         else:
-            raise ValueError("Unsupported non-relational database type")
+            raise ValueError("Non-relational database type not supported.")
 
     elif source_type == "file":
         file_type = connection_details.get("file_type")

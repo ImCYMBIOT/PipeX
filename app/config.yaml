@@ -1,4 +1,24 @@
-connection_details:
-  headers:
-    Authorization: "Bearer YOUR_API_KEY"
-query_or_endpoint: "https://api.example.com/data"
+extract:
+  source: "api"
+  connection_details:
+    headers: {}
+  query_or_endpoint: "http://127.0.0.1:5000/data"
+
+transform:
+  script: "tests/transform_script.py"
+  config:
+    drop_columns: ["id"]
+    rename_columns:
+      title: "post_title"
+    filter_rows: "post_title != ''"
+    add_columns:
+      new_column: "data['post_title'].str.len()"
+
+load:
+  target: "s3"
+  config:
+    aws_access_key_id: "${AWS_ACCESS_KEY_ID}" # From environment variable
+    aws_secret_access_key: "${AWS_SECRET_ACCESS_KEY}" # From environment variable
+    region_name: "${AWS_REGION}" # From environment variable
+    bucket_name: "${BUCKET_NAME}" # From environment variable
+    file_name: "data.csv"
