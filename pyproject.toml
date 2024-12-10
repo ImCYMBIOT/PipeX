@@ -15,6 +15,7 @@ boto3 = "1.35.74"
 requests = "2.32.3"
 pyyaml = "6.0.2"
 tqdm = "^4.67.1"
+cachetools = "^5.5.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.3.4"

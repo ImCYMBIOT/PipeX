@@ -7,7 +7,6 @@
     |-- data.csv
     |-- extract.py
     |-- load.py
-    |-- mock_api.py
     |-- storage.py
     |-- transform.py
     |-- utils.py
@@ -23,11 +22,12 @@
 |-- config
     |-- logging_config.py
     |-- settings.py
+    |-- __init__.py
 |-- LICENSE
 |-- main.py
 |-- poetry.lock
 |-- pyproject.toml
-|-- Readme.MD
+|-- Readme.md
 |-- requirements.txt
 |-- tests
     |-- test_cli.py
