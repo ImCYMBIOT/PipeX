@@ -7,16 +7,20 @@
     |-- data.csv
     |-- extract.py
     |-- load.py
+    |-- mockapi.py
     |-- storage.py
     |-- transform.py
     |-- utils.py
     |-- __init__.py
     |-- __pycache__
+        |-- api.cpython-311.pyc
         |-- cli.cpython-311.pyc
         |-- cli.cpython-312.pyc
         |-- extract.cpython-311.pyc
         |-- load.cpython-311.pyc
+        |-- storage.cpython-311.pyc
         |-- transform.cpython-311.pyc
+        |-- utils.cpython-311.pyc
         |-- __init__.cpython-311.pyc
         |-- __init__.cpython-312.pyc
 |-- config
@@ -35,5 +39,7 @@
     |-- test_load.py
     |-- test_transform.py
     |-- transform_script.py
+    |-- __init__.py
     |-- __pycache__
         |-- transform_script.cpython-311.pyc
+|-- test_access.py

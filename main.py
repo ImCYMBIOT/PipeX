@@ -1,14 +1,10 @@
 import typer
+from app.cli import app as cli_app
 
-app = typer.Typer()  # Initialize the Typer application
+app = typer.Typer()
 
-@app.command()
-def hello(name: str):
-    typer.echo(f"Hello {name}!")
-    
-@app.command()
-def lola(greet: str):
-    typer.echo(f"bsdk,lehen ka boda {greet}!")
+# Add the commands from the app.cli module
+app.add_typer(cli_app, name="app")
 
-if __name__ == "__main__":  # Correct main block condition
+if __name__ == "__main__":
     app()

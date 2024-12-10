@@ -49,9 +49,11 @@ def load(target: str, config: str, data_json: str):
     # Replace environment variable placeholders with actual values
     config_data['load']['config']['aws_access_key_id'] = os.getenv('AWS_ACCESS_KEY_ID')
     config_data['load']['config']['aws_secret_access_key'] = os.getenv('AWS_SECRET_ACCESS_KEY')
+    config_data['load']['config']['region_name'] = os.getenv('AWS_REGION')
+    config_data['load']['config']['bucket_name'] = os.getenv('BUCKET_NAME')
     
     data = pd.read_json(data_json, orient='split')
-    load_data(target, config_data, data)
+    load_data(target, config_data['load']['config'], data)
     typer.echo("Data loading complete.")
 
 @app.command()
