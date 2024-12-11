@@ -5,13 +5,14 @@ import psycopg2
 from pymongo import MongoClient
 
 def extract_data(source_type: str, connection_details: dict, query_or_endpoint: str):
-    if source_type == "api":
+    if source_type.lower() == "api":
         response = requests.get(query_or_endpoint, headers=connection_details.get("headers", {}))
+        response.raise_for_status()
         data = response.json()
         print("Data extracted from API!")
         return pd.DataFrame(data)
 
-    elif source_type == "database":
+    elif source_type.lower() == "database":
         db_type = connection_details.get("db_type")
         if db_type == "mysql":
             connection = mysql.connector.connect(
@@ -35,7 +36,7 @@ def extract_data(source_type: str, connection_details: dict, query_or_endpoint: 
         print("Data extracted from database.")
         return df
     
-    elif source_type == "non_relational_database":
+    elif source_type.lower() == "non_relational_database":
         db_type = connection_details.get("db_type")
         if db_type == "mongodb":
             client = MongoClient(
@@ -53,7 +54,7 @@ def extract_data(source_type: str, connection_details: dict, query_or_endpoint: 
         else:
             raise ValueError("Non-relational database type not supported.")
 
-    elif source_type == "file":
+    elif source_type.lower() == "file":
         file_type = connection_details.get("file_type")
         if file_type == "csv":
             df = pd.read_csv(query_or_endpoint)
@@ -67,3 +68,6 @@ def extract_data(source_type: str, connection_details: dict, query_or_endpoint: 
     
     else:
         raise ValueError("Unsupported source type.")
+
+# Example usage:
+# data = extract_data("api", {"headers": {"Authorization": "Bearer YOUR_API_KEY"}}, "http://127.0.0.1:5000/data")

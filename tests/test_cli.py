@@ -12,7 +12,7 @@ def test_extract(mocker):
 
 def test_transform(mocker):
     mocker.patch("app.transform.transform_data", return_value={"data": "transformed"})
-    result = runner.invoke(app, ["transform", "path/to/transform_script.py", "app/config.yaml", '{"data": "extracted"}'])
+    result = runner.invoke(app, ["transform", "test/stransform_script.py", "app/config.yaml", '{"data": "extracted"}'])
     assert result.exit_code == 0
     assert "Data transformation complete." in result.output
 

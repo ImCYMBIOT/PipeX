@@ -12,7 +12,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 def load_data(target: str, config: dict, data: pd.DataFrame):
-    if target == "s3":
+    if target == "S3 Bucket":
         s3 = boto3.client(
             "s3",
             aws_access_key_id=config['aws_access_key_id'],
@@ -63,7 +63,7 @@ def load_data(target: str, config: dict, data: pd.DataFrame):
         else:
             raise ValueError("Non-relational database type not supported.")
 
-    elif target == "file":
+    elif target == "Local File":
         file_type = config.get("file_type")
         if file_type == "csv":
             data.to_csv(config['file_path'], index=False)

@@ -12,7 +12,7 @@ transform:
       title: "post_title"
     filter_rows: "post_title != ''"
     add_columns:
-      new_column: "data['post_title'].str.len()"
+      new_column: "post_title.str.len()"
 
 load:
   target: "s3"

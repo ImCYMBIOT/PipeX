@@ -1,13 +1,12 @@
 import typer
 import os
-from app.cli import app as cli_app  
-
+import yaml
+from app.cli import extract_data, transform_data, load_data, get_env_variables
+from app.cli import prompt_for_extraction_method, prompt_for_loading_method, prompt_for_aws_credentials
+import pandas as pd
+from io import StringIO
 # Main Typer application
 app = typer.Typer()
-
-# Add the commands from the app.cli module as a subcommand group
-app.add_typer(cli_app, name="app")
-
 
 @app.callback(invoke_without_command=True)
 def welcome_message(ctx: typer.Context):
@@ -21,7 +20,6 @@ def welcome_message(ctx: typer.Context):
         typer.echo("  pipelinex run           - Run the ETL pipeline interactively.")
         typer.echo("  pipelinex --help        - Show help menu.")
 
-
 @app.command()
 def run():
     """
@@ -30,28 +28,49 @@ def run():
     typer.echo("Welcome to PipelineX Interactive Mode!")
 
     # Prompt for extraction method
-    extraction_method = typer.prompt("Select an extraction method (e.g., API, database)")
+    extraction_method = prompt_for_extraction_method()
     typer.echo(f"Selected extraction method: {extraction_method}")
 
     # Prompt for loading method
-    loading_method = typer.prompt("Select a loading method (e.g., S3 Bucket, local file)")
+    loading_method = prompt_for_loading_method()
     typer.echo(f"Selected loading method: {loading_method}")
 
     # Prompt for AWS credentials if loading to S3
-    if loading_method.lower() == "s3 bucket":
-        aws_access_key_id = typer.prompt("Enter AWS Access Key ID")
-        aws_secret_access_key = typer.prompt("Enter AWS Secret Access Key", hide_input=True)
-        aws_region = typer.prompt("Enter AWS Region (e.g., ap-south-1)")
-        bucket_name = typer.prompt("Enter S3 Bucket Name")
+    if loading_method == "S3 Bucket":
+        aws_access_key_id, aws_secret_access_key, aws_region, bucket_name = prompt_for_aws_credentials()
         os.environ['AWS_ACCESS_KEY_ID'] = aws_access_key_id
         os.environ['AWS_SECRET_ACCESS_KEY'] = aws_secret_access_key
         os.environ['AWS_REGION'] = aws_region
         os.environ['BUCKET_NAME'] = bucket_name
 
-    # Run the ETL pipeline
-    typer.echo("Starting the ETL pipeline...")
-    cli_app.run()  # Ensure cli_app has a `run` command implemented
+    # Load configuration
+    config_path = "app/config.yaml"
+    with open(config_path, 'r') as file:
+        config_data = yaml.safe_load(file)
 
+    # Extract data
+    typer.echo("Extracting data...")
+    query_or_endpoint = config_data['extract']['query_or_endpoint']
+    connection_details = config_data['extract']['connection_details']
+    extracted_data = extract_data(source_type=extraction_method, connection_details=connection_details, query_or_endpoint=query_or_endpoint)
+    data_json = extracted_data.to_json(orient='split')
+
+    # Transform data
+    typer.echo("Transforming data...")
+    transformed_data = transform_data(
+        script_path=config_data['transform']['script'],  # Use `script_path`
+        config=config_data['transform']['config'],
+        data=pd.read_json(StringIO(data_json), orient='split')
+    )
+
+    transformed_data_json = transformed_data.to_json(orient='split')
+
+    # Load data
+    typer.echo("Loading data...")
+    load_config = get_env_variables(config_data['load']['config'])
+    load_data(target=loading_method, config=load_config, data=transformed_data)
+
+    typer.echo("ETL pipeline completed successfully.")
 
 if __name__ == "__main__":
     app(prog_name="pipelinex")

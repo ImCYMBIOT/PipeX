@@ -7,12 +7,12 @@ def test_load_data_to_csv(mocker):
     
     data = pd.DataFrame({'column1': [1, 2, 3], 'column2': ['a', 'b', 'c']})
     load_data(
-        target="file",
-        config={'file_type': 'csv', 'file_path': 'path/to/your/file.csv'},
+        target="Local File",
+        config={'file_type': 'csv', 'file_path': 'app/data.csv'},
         data=data
     )
     
-    pd.DataFrame.to_csv.assert_called_once_with('path/to/your/file.csv', index=False)
+    pd.DataFrame.to_csv.assert_called_once_with('app/data.csv', index=False)
 
 def test_load_data_to_s3(mocker):
     mock_s3 = mocker.Mock()
@@ -20,7 +20,7 @@ def test_load_data_to_s3(mocker):
     
     data = pd.DataFrame({'column1': [1, 2, 3], 'column2': ['a', 'b', 'c']})
     load_data(
-        target="s3",
+        target="S3 Bucket",
         config={
             'aws_access_key_id': 'YOUR_ACCESS_KEY',
             'aws_secret_access_key': 'YOUR_SECRET_KEY',
@@ -31,7 +31,11 @@ def test_load_data_to_s3(mocker):
         data=data
     )
     
-    mock_s3.put_object.assert_called_once()
+    mock_s3.put_object.assert_called_once_with(
+        Bucket='your-bucket-name',
+        Key='data.csv',
+        Body=mocker.ANY
+    )
 
 def test_load_data_to_mysql(mocker):
     mock_engine = mocker.Mock()

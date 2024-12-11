@@ -19,7 +19,7 @@ def test_transform_data(mocker):
         'add_columns': True
     }
     
-    transformed_data = transform_data('path/to/transform_script.py', config, data, options)
+    transformed_data = transform_data('tests/transform_script.py', config, data, options)
     
     expected_data = pd.DataFrame({
         'new_column1': [2, 3],
