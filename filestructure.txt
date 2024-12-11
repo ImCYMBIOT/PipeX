@@ -35,7 +35,6 @@
     |-- __init__.py
 |-- LICENSE
 |-- MANIFEST.in
-|-- pipelinex.bat
 |-- PipelineX.egg-info
     |-- dependency_links.txt
     |-- entry_points.txt
@@ -43,7 +42,8 @@
     |-- requires.txt
     |-- SOURCES.txt
     |-- top_level.txt
-|-- pipelinex.py
+|-- pipex.bat
+|-- pipex.py
 |-- poetry.lock
 |-- pyproject.toml
 |-- Readme.md

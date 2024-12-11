@@ -33,20 +33,20 @@ def welcome_message(ctx: typer.Context):
     Default action when no command is provided.
     """
     if ctx.invoked_subcommand is None:
-        typer.echo("Welcome to PipelineX!")
-        typer.echo("Use the following commands to interact with PipelineX:")
-        typer.echo("  pipelinex app <command>  - Access ETL subcommands.")
-        typer.echo("  pipelinex run           - Run the ETL pipeline interactively.")
-        typer.echo("  pipelinex --help        - Show help menu.")
+        typer.echo("Welcome to PipeX!")
+        typer.echo("Use the following commands to interact with PipeX:")
+        typer.echo("  pipex app <command>  - Access ETL subcommands.")
+        typer.echo("  pipex run           - Run the ETL pipeline interactively.")
+        typer.echo("  pipex --help        - Show help menu.")
 
 @app.command()
 def run():
     """
-    Entry point for the PipelineX interactive ETL workflow.
+    Entry point for the PipeX interactive ETL workflow.
     """
-    ascii_art = pyfiglet.figlet_format("PipelineX", font="graffiti")
+    ascii_art = pyfiglet.figlet_format("PipeX", font="graffiti")
     typer.echo(ascii_art)
-    typer.echo("Welcome to PipelineX Interactive Mode!")
+    typer.echo("Welcome to PipeX Interactive Mode!")
 
     # Check if .env file exists, if not create a default one
     env_path = ".env"
@@ -207,4 +207,4 @@ API_ENDPOINT=your-api-endpoint
     typer.echo("ETL pipeline completed successfully.")
 
 if __name__ == "__main__":
-    app(prog_name="pipelinex")
+    app(prog_name="pipex")

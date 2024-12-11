@@ -15,7 +15,7 @@ load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("PipelineX.CLI")
+logger = logging.getLogger("PipeX.CLI")
 
 app = typer.Typer()
 

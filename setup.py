@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="PipelineX",
+    name="PipeX",
     version="0.1.0",
-    author="Your Name",
-    author_email="your.email@example.com",
+    author="Agnivesh Kumar",
+    author_email="agniveshkumar15@gmail.com",
     description="A simple ETL pipeline tool",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/pipelinex",
+    url="https://github.com/yourusername/pipex",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -24,7 +24,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "pipelinex=pipelinex:app",
+            "pipex=pipex:app",
         ],
     },
     classifiers=[
