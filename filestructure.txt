@@ -46,6 +46,13 @@
     |-- SOURCES.txt
     |-- top_level.txt
 |-- pipex.bat
+|-- PipeX.egg-info
+    |-- dependency_links.txt
+    |-- entry_points.txt
+    |-- PKG-INFO
+    |-- requires.txt
+    |-- SOURCES.txt
+    |-- top_level.txt
 |-- pipex.py
 |-- poetry.lock
 |-- pyproject.toml

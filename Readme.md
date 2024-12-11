@@ -12,6 +12,10 @@ PipeX is a CLI-based tool for managing and automating end-to-end ETL (Extract, T
 
 ---
 
+<!-- add a highlight suggesting that right now extracting through api and loading to s3 works, everything else is still in progress -->
+
+> **Note:** Currently, extracting data through APIs and loading it to AWS S3 is fully functional. Other features are still in progress.
+
 ## **Installation**
 
 ### **Prerequisites**
