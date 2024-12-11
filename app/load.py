@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 import logging
 
-# Load environment variables from .env file
+# Load environment variables from .env file # ? This is not needed in the test_load.py file
 load_dotenv()
 
 logger = logging.getLogger(__name__)

@@ -15,10 +15,10 @@ transform:
       new_column: "post_title.str.len()"
 
 load:
-  target: "s3"
+  target: "S3 Bucket"
   config:
-    aws_access_key_id: "${AWS_ACCESS_KEY_ID}" # From environment variable
-    aws_secret_access_key: "${AWS_SECRET_ACCESS_KEY}" # From environment variable
-    region_name: "${AWS_REGION}" # From environment variable
-    bucket_name: "${BUCKET_NAME}" # From environment variable
+    aws_access_key_id: "${AWS_ACCESS_KEY_ID}" # ! From environment variable
+    aws_secret_access_key: "${AWS_SECRET_ACCESS_KEY}" # ! From environment variable
+    region_name: "${AWS_REGION}" # ! From environment variable
+    bucket_name: "${BUCKET_NAME}" # ! From environment variable
     file_name: "data.csv"
