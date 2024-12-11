@@ -1,16 +1,31 @@
 import typer
 import os
 import yaml
-from app.cli import extract_data, transform_data, load_data, get_env_variables
-from app.cli import prompt_for_extraction_method, prompt_for_loading_method, prompt_for_aws_credentials
+from app.cli import extract_data, transform_data, load_data, prompt_for_extraction_method, prompt_for_loading_method, prompt_for_aws_credentials
 import pandas as pd
 from io import StringIO
 import questionary
 import subprocess
 import pyfiglet
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Main Typer application
 app = typer.Typer()
+
+def apply_env_variables(config):
+    """
+    Recursively replace placeholders in the config with environment variables.
+    """
+    if isinstance(config, dict):
+        return {key: apply_env_variables(value) for key, value in config.items()}
+    elif isinstance(config, str) and config.startswith("${") and config.endswith("}"):
+        env_var = config[2:-1]
+        return os.getenv(env_var, config)  # Replace with env value or leave as is
+    else:
+        return config
 
 @app.callback(invoke_without_command=True)
 def welcome_message(ctx: typer.Context):
@@ -30,14 +45,38 @@ def run():
     Entry point for the PipelineX interactive ETL workflow.
     """
     ascii_art = pyfiglet.figlet_format("PipelineX", font="graffiti")
-    
     typer.echo(ascii_art)
     typer.echo("Welcome to PipelineX Interactive Mode!")
+
+    # Check if .env file exists, if not create a default one
+    env_path = ".env"
+    if not os.path.exists(env_path):
+        with open(env_path, "w") as file:
+            default_env = """# .env
+
+# AWS Credentials
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_REGION=your-region
+BUCKET_NAME=your-bucket-name
+
+# API Credentials
+API_TOKEN=your-api-token
+API_ENDPOINT=your-api-endpoint
+"""
+            file.write(default_env)
+
+    # Open .env file in default editor
+    typer.echo("Opening .env file for editing. Please fill in your credentials.")
+    subprocess.call([os.getenv('EDITOR', 'notepad'), env_path])
+
+    # Reload environment variables from .env file
+    load_dotenv()
 
     # Prompt for extraction method
     extraction_method = prompt_for_extraction_method()
     typer.echo(f"Selected extraction method: {extraction_method}")
- 
+
     # Ask for configuration method
     config_method = questionary.select(
         "How would you like to provide extraction details?",
@@ -71,7 +110,7 @@ def run():
                         }
                     },
                     "load": {
-                        "target": "s3",
+                        "target": "S3 Bucket",
                         "config": {
                             "aws_access_key_id": "${AWS_ACCESS_KEY_ID}",
                             "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY}",
@@ -133,6 +172,9 @@ def run():
             }
         }
 
+    # Apply environment variables to config
+    config_data = apply_env_variables(config_data)
+
     # Execute ETL pipeline
     typer.echo("Extracting data...")
     extracted_data = extract_data(
@@ -143,18 +185,22 @@ def run():
     data_json = extracted_data.to_json(orient='split')
 
     typer.echo("Transforming data...")
+    transform_script = config_data['transform']['script']
+    if not os.path.exists(transform_script):
+        typer.echo(f"Transformation script not found: {transform_script}")
+        raise typer.Exit()
+
     transformed_data = transform_data(
-        script_path=config_data['transform']['script'],
+        script_path=transform_script,
         config=config_data['transform']['config'],
         data=pd.read_json(StringIO(data_json), orient='split')
     )
     transformed_data_json = transformed_data.to_json(orient='split')
 
     typer.echo("Loading data...")
-    load_config = get_env_variables(config_data['load']['config'])
     load_data(
         target=config_data['load']['target'],
-        config=load_config,
+        config=config_data['load']['config'],
         data=pd.read_json(StringIO(transformed_data_json), orient='split')
     )
 
