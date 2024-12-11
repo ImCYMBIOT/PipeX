@@ -1,5 +1,8 @@
 |-- .env
 |-- .env.example
+|-- .github
+    |-- workflows
+        |-- python-publish.yml
 |-- .gitignore
 |-- .pytest_cache
     |-- .gitignore
