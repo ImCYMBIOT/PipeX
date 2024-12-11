@@ -1,6 +1,6 @@
 import typer
 import os
-from app.cli import app as cli_app  # Assuming cli_app is a Typer instance
+from app.cli import app as cli_app  
 
 # Main Typer application
 app = typer.Typer()
@@ -9,16 +9,17 @@ app = typer.Typer()
 app.add_typer(cli_app, name="app")
 
 
-@app.callback()
-def welcome_message():
+@app.callback(invoke_without_command=True)
+def welcome_message(ctx: typer.Context):
     """
     Default action when no command is provided.
     """
-    typer.echo("Welcome to PipelineX!")
-    typer.echo("Use the following commands to interact with PipelineX:")
-    typer.echo("  pipelinex app <command>  - Access ETL subcommands.")
-    typer.echo("  pipelinex run           - Run the ETL pipeline interactively.")
-    typer.echo("  pipelinex --help        - Show help menu.")
+    if ctx.invoked_subcommand is None:
+        typer.echo("Welcome to PipelineX!")
+        typer.echo("Use the following commands to interact with PipelineX:")
+        typer.echo("  pipelinex app <command>  - Access ETL subcommands.")
+        typer.echo("  pipelinex run           - Run the ETL pipeline interactively.")
+        typer.echo("  pipelinex --help        - Show help menu.")
 
 
 @app.command()
