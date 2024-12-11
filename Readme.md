@@ -58,13 +58,13 @@ PipelineX is a CLI-based tool for managing and automating end-to-end ETL (Extrac
 To start the CLI, use the command:
 
 ```bash
-pipelinx
+pipelinex
 ```
 
 ### **Available Commands**
 
 ```bash
-pipelinx --help
+pipelinex --help
 ```
 
 This will display all available commands and their usage.
@@ -75,27 +75,27 @@ This will display all available commands and their usage.
    Extract data from a MySQL database:
 
    ```bash
-   pipelinx extract db --host localhost --user root --password secret --db mydb --query "SELECT * FROM table_name"
+   pipelinex extract db --host localhost --user root --password secret --db mydb --query "SELECT * FROM table_name"
    ```
 
 2. **Transform Data**  
    Apply transformations to a CSV file:
 
    ```bash
-   pipelinx transform --input data.csv --script transform_script.py --output transformed_data.csv
+   pipelinex transform --input data.csv --script transform_script.py --output transformed_data.csv
    ```
 
 3. **Load Data**  
    Load transformed data to an S3 bucket:
 
    ```bash
-   pipelinx load s3 --file transformed_data.csv --bucket my-bucket --key data/transformed_data.csv
+   pipelinex load s3 --file transformed_data.csv --bucket my-bucket --key data/transformed_data.csv
    ```
 
 4. **Run Full Pipeline**  
    Run the entire ETL process in one command:
    ```bash
-   pipelinx run --config pipeline_config.yaml
+   pipelinex run --config pipeline_config.yaml
    ```
 
 ---
@@ -125,7 +125,35 @@ load:
 Save this configuration as `pipeline_config.yaml` and run:
 
 ```bash
-pipelinx run --config pipeline_config.yaml
+pipelinex run --config pipeline_config.yaml
+```
+
+---
+
+## **Environment Variables**
+
+PipelineX uses a `.env` file to manage sensitive information like API keys and database credentials. Follow these steps to set up your `.env` file:
+
+1. **Create a `.env` File**: Copy the `.env.example` file to `.env` and fill in your credentials.
+
+```sh
+cp .env.example .env
+```
+
+2. **Edit the `.env` File**: Open the `.env` file and fill in your AWS credentials and API details.
+
+```properties
+# .env
+
+# AWS Credentials
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_REGION=your-region
+BUCKET_NAME=your-bucket-name
+
+# API Credentials
+API_TOKEN=your-api-token
+API_ENDPOINT=your-api-endpoint
 ```
 
 ---
