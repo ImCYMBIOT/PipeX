@@ -39,7 +39,7 @@ jobs:
             should_release: ${{ steps.check.outputs.should_release }}
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
                   token: ${{ secrets.GITHUB_TOKEN }}
@@ -154,7 +154,7 @@ jobs:
         if: needs.auto-version.outputs.should_release == 'true'
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   ref: v${{ needs.auto-version.outputs.version }}
 
