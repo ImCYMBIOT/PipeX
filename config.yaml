@@ -1,0 +1,31 @@
+# Simple PipeX Configuration for Testing
+extract:
+  source: "api"
+  connection_details:
+    headers:
+      Authorization: "Bearer ${API_TOKEN}"
+    timeout: 30
+  query_or_endpoint: "${API_ENDPOINT}"
+
+transform:
+  script: "tests/transform_script.py"
+  config:
+    drop_columns: ["userId"]
+    rename_columns:
+      title: "post_title"
+      body: "post_content"
+    filter_rows: "post_title.notna()"
+    add_columns:
+      title_length: "post_title.str.len()"
+      word_count: "post_content.str.split().str.len()"
+  options:
+    drop_columns: true
+    rename_columns: true
+    filter_rows: true
+    add_columns: true
+
+load:
+  target: "Local File"
+  config:
+    file_type: "csv"
+    file_path: "output/pipeline_output.csv"

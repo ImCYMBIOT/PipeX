@@ -1,0 +1,217 @@
+# Multi-Cloud Storage Configuration Examples for PipeX
+
+# AWS S3 Configuration
+aws_s3_config:
+  extract:
+    source: "api"
+    connection_details:
+      headers:
+        Authorization: "Bearer ${API_TOKEN}"
+    query_or_endpoint: "${API_ENDPOINT}"
+
+  transform:
+    scripts:
+      - "app/default_transforms.py"
+      - "custom_transforms/business_rules.py"
+    config:
+      use_default_transforms: true
+      default_config:
+        clean_data: true
+        feature_engineering: true
+        add_metadata: true
+      script_config:
+        industry: "finance"
+        large_transaction_threshold: 5000
+
+  load:
+    target: "Cloud Storage"
+    config:
+      provider: "aws"
+      bucket_name: "${AWS_BUCKET_NAME}"
+      file_name: "processed_data.csv"
+      format: "csv"
+      aws_access_key_id: "${AWS_ACCESS_KEY_ID}"
+      aws_secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+      region_name: "${AWS_REGION}"
+
+---
+# Google Cloud Storage Configuration
+gcp_gcs_config:
+  extract:
+    source: "file"
+    connection_details:
+      file_type: "excel"
+      sheet_name: "Sheet1"
+      engine: "openpyxl"
+    query_or_endpoint: "data/input.xlsx"
+
+  transform:
+    scripts: ["transforms/data_cleaning.py"]
+    config:
+      drop_columns: ["temp_id", "internal_notes"]
+      rename_columns:
+        customer_name: "client_name"
+        order_date: "purchase_date"
+      add_columns:
+        processed_timestamp: "pd.Timestamp.now()"
+
+  load:
+    target: "Cloud Storage"
+    config:
+      provider: "gcp"
+      bucket_name: "${GCP_BUCKET_NAME}"
+      file_name: "processed_data.parquet"
+      format: "parquet"
+      project_id: "${GOOGLE_CLOUD_PROJECT}"
+      credentials_path: "${GOOGLE_APPLICATION_CREDENTIALS}"
+
+---
+# Azure Blob Storage Configuration
+azure_config:
+  extract:
+    source: "database"
+    connection_details:
+      db_type: "postgres"
+      host: "${DB_HOST}"
+      user: "${DB_USER}"
+      password: "${DB_PASSWORD}"
+      database: "${DB_NAME}"
+    query_or_endpoint: "SELECT * FROM sales_data WHERE date >= '2024-01-01'"
+
+  transform:
+    config:
+      use_default_transforms: true
+      default_config:
+        cleaning:
+          remove_duplicates: true
+          missing_strategy: "fill"
+          standardize_text: true
+        features:
+          add_text_features: true
+          add_numeric_features: true
+        metadata:
+          add_timestamp: true
+          add_quality_score: true
+
+  load:
+    target: "Cloud Storage"
+    config:
+      provider: "azure"
+      bucket_name: "${AZURE_CONTAINER_NAME}"
+      file_name: "sales_processed.json"
+      format: "json"
+      connection_string: "${AZURE_STORAGE_CONNECTION_STRING}"
+
+---
+# DigitalOcean Spaces Configuration
+digitalocean_config:
+  extract:
+    source: "api"
+    connection_details:
+      headers:
+        X-API-Key: "${DO_API_KEY}"
+      timeout: 60
+    query_or_endpoint: "${DO_API_ENDPOINT}"
+
+  transform:
+    scripts:
+      - "app/default_transforms.py"
+    config:
+      use_default_transforms: true
+      default_config:
+        clean_data: true
+        feature_engineering: true
+        validation:
+          type_conversions:
+            price: "numeric"
+            created_at: "datetime"
+          value_ranges:
+            price: [0, 10000]
+            quantity: [1, 1000]
+
+  load:
+    target: "Cloud Storage"
+    config:
+      provider: "digitalocean"
+      bucket_name: "${DO_SPACES_BUCKET}"
+      file_name: "api_data_processed.csv"
+      format: "csv"
+      access_key_id: "${DO_SPACES_ACCESS_KEY_ID}"
+      secret_access_key: "${DO_SPACES_SECRET_ACCESS_KEY}"
+      region: "${DO_SPACES_REGION}"
+
+---
+# Multi-Format File Processing
+multi_format_config:
+  extract:
+    source: "file"
+    connection_details:
+      file_type: "parquet"
+      columns: ["id", "name", "value", "timestamp"]
+      engine: "pyarrow"
+    query_or_endpoint: "data/large_dataset.parquet"
+
+  transform:
+    scripts:
+      - "transforms/industry_specific.py"
+      - "transforms/custom_business_logic.py"
+    config:
+      fail_on_script_error: false # Continue if one script fails
+      script_config:
+        industry: "retail"
+        custom_rules:
+          high_value_threshold: 1000
+          customer_segmentation: true
+
+  load:
+    target: "Local File"
+    config:
+      file_type: "excel"
+      file_path: "output/processed_data.xlsx"
+      sheet_name: "ProcessedData"
+      add_timestamp: true
+      engine: "openpyxl"
+
+---
+# Multiple Script Transformation Example
+complex_transform_config:
+  extract:
+    source: "api"
+    connection_details:
+      headers:
+        Authorization: "Bearer ${API_TOKEN}"
+    query_or_endpoint: "${API_ENDPOINT}"
+
+  transform:
+    scripts:
+      - "transforms/step1_cleaning.py"
+      - "transforms/step2_enrichment.py"
+      - "transforms/step3_validation.py"
+      - "transforms/step4_business_rules.py"
+    config:
+      fail_on_script_error: true
+      script_config:
+        # Configuration passed to all scripts
+        environment: "production"
+        validation_rules:
+          required_columns: ["id", "name", "email"]
+          data_quality_threshold: 0.95
+        business_rules:
+          customer_classification: true
+          risk_scoring: true
+      # Standard config-based transformations applied after scripts
+      drop_columns: ["temp_fields", "debug_info"]
+      add_columns:
+        pipeline_version: "'v2.0'"
+        processing_date: "pd.Timestamp.now().date()"
+
+  load:
+    target: "Cloud Storage"
+    config:
+      provider: "aws"
+      bucket_name: "${AWS_BUCKET_NAME}"
+      file_name: "complex_processed_data.parquet"
+      format: "parquet"
+      aws_access_key_id: "${AWS_ACCESS_KEY_ID}"
+      aws_secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+      region_name: "${AWS_REGION}"

@@ -1,37 +1,90 @@
+# PipeX ETL Pipeline Configuration
+# This file defines the complete ETL workflow configuration
+
+# Data Extraction Configuration
 extract:
-  source: "api"  # Specify the source type (api, file, database)
+  source: "api" # Options: api, database, non_relational_database, file
   connection_details:
     headers:
-      Authorization: "Bearer ${API_TOKEN}"  # Use an environment variable for the API token
-  query_or_endpoint: "${API_ENDPOINT}"  # Use an environment variable for the API endpoint
+      Authorization: "Bearer ${API_TOKEN}" # Environment variable for API token
+      Content-Type: "application/json"
+    timeout: 30 # Request timeout in seconds
+  query_or_endpoint: "${API_ENDPOINT}" # Environment variable for API endpoint
 
-## BE CAREFUL WITH THE FOLLOWING CONFIGURATION
-
+# Data Transformation Configuration
 transform:
-  script: "tests/transform_script.py"  # Path to the transformation script
-  config:  # Configuration for the transformation script
-    drop_columns: ["id"]  # Columns to drop from the data
-    rename_columns: 
-      title: "post_title"  # Rename columns (original_name: new_name)
-    filter_rows: "post_title != ''"  # Filter rows using a query
-    add_columns:
-      new_column: "post_title.str.len()"  # Add new columns with expressions
-
-load:
-  target: "S3 Bucket"  # Target for loading data (S3 Bucket, Local File, database, non_relational_database)
+  script: "tests/transform_script.py" # Path to custom transformation script (optional)
   config:
-    aws_access_key_id: "${AWS_ACCESS_KEY_ID}"  # From environment variable
-    aws_secret_access_key: "${AWS_SECRET_ACCESS_KEY}"  # From environment variable
-    region_name: "${AWS_REGION}"  # From environment variable
-    bucket_name: "${BUCKET_NAME}"  # From environment variable
-    file_name: "data.csv"  # Name of the file to be saved in the target
+    # Column operations
+    drop_columns: ["userId"] # Columns to remove
+    rename_columns:
+      title: "post_title"
+      body: "post_content"
 
-# Instructions for users:
-# 1. Create a .env file in the root directory of your project.
-# 2. Add the following lines to the .env file and fill in your information:
-#    AWS_ACCESS_KEY_ID=your-access-key-id
-#    AWS_SECRET_ACCESS_KEY=your-secret-access-key
-#    AWS_REGION=your-region
-#    BUCKET_NAME=your-bucket-name
-#    API_TOKEN=your-api-token
-#    API_ENDPOINT=your-api-endpoint
+    # Row filtering (pandas query syntax)
+    filter_rows: "post_title.notna() & (post_title != '')"
+
+    # Add computed columns
+    add_columns:
+      title_length: "post_title.str.len()"
+      word_count: "post_content.str.split().str.len()"
+      processed_date: "pd.Timestamp.now()"
+
+  options:
+    drop_columns: true
+    rename_columns: true
+    filter_rows: true
+    add_columns: true
+
+# Data Loading Configuration
+load:
+  target: "Local File" # Options: S3 Bucket, Local File, database, non_relational_database
+  config:
+    # Local File Configuration
+    file_type: "csv"
+    file_path: "output/final_processed_data.csv"
+# Alternative configurations for different targets:
+
+# For Local File loading:
+# load:
+#   target: "Local File"
+#   config:
+#     file_type: "csv"  # Options: csv, json
+#     file_path: "output/processed_data.csv"
+#     separator: ","
+#     encoding: "utf-8"
+
+# For Database loading:
+# load:
+#   target: "database"
+#   config:
+#     db_type: "postgres"  # Options: mysql, postgres
+#     host: "${DB_HOST}"
+#     port: 5432
+#     username: "${DB_USERNAME}"
+#     password: "${DB_PASSWORD}"
+#     database: "${DB_NAME}"
+#     table_name: "processed_data"
+#     if_exists: "replace"  # Options: fail, replace, append
+
+# For MongoDB loading:
+# load:
+#   target: "non_relational_database"
+#   config:
+#     db_type: "mongodb"
+#     host: "${MONGO_HOST}"
+#     port: 27017
+#     username: "${MONGO_USERNAME}"
+#     password: "${MONGO_PASSWORD}"
+#     database: "${MONGO_DB}"
+#     collection: "processed_data"
+#     replace_collection: false
+
+# Environment Variables Required:
+# Create a .env file in the project root with:
+# AWS_ACCESS_KEY_ID=your-access-key-id
+# AWS_SECRET_ACCESS_KEY=your-secret-access-key
+# AWS_REGION=your-preferred-region
+# BUCKET_NAME=your-s3-bucket-name
+# API_TOKEN=your-api-token
+# API_ENDPOINT=https://api.example.com/data

@@ -1,0 +1,17 @@
+# Test missing environment variables
+extract:
+  source: "api"
+  connection_details:
+    headers:
+      Authorization: "Bearer ${NONEXISTENT_TOKEN}"
+  query_or_endpoint: "${NONEXISTENT_ENDPOINT}"
+
+transform:
+  config:
+    drop_columns: ["id"]
+
+load:
+  target: "Local File"
+  config:
+    file_type: "csv"
+    file_path: "output/test.csv"

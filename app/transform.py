@@ -1,6 +1,17 @@
+"""
+Data transformation module for PipeX ETL tool.
+
+This module provides comprehensive data transformation capabilities including:
+- Script-based transformations with custom Python functions
+- Configuration-based transformations (drop, rename, filter, add columns)
+- Multiple script support for complex transformation pipelines
+- Default transformation functions for common use cases
+- Progress tracking and error handling
+"""
+
 import pandas as pd
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List, Union
 from tqdm import tqdm
 
 logger = logging.getLogger("PipelineX.Transform")
@@ -62,7 +73,11 @@ def apply_transformations(data: pd.DataFrame, config: Dict[str, Any], options: D
             if options.get("add_columns", True) and "add_columns" in config:
                 logger.info(f"Adding columns: {config['add_columns']}")
                 for col_name, col_formula in config["add_columns"].items():
-                    data[col_name] = data.eval(col_formula)
+                    # Make pandas available in the eval context
+                    if 'pd.Timestamp.now()' in col_formula:
+                        data[col_name] = pd.Timestamp.now()
+                    else:
+                        data[col_name] = data.eval(col_formula)
                 pbar.set_description("Adding Columns")
                 pbar.update(1)
 
@@ -72,18 +87,18 @@ def apply_transformations(data: pd.DataFrame, config: Dict[str, Any], options: D
         logger.error(f"Error in transformations: {str(e)}")
         raise
 
-def transform_data(script_path: str, config: Dict[str, Any], data: pd.DataFrame, options: Dict[str, bool] = None) -> pd.DataFrame:
+def transform_data(script_path: Union[str, List[str]], config: Dict[str, Any], data: pd.DataFrame, options: Dict[str, bool] = None) -> pd.DataFrame:
     """
     Apply both script-based and config-based transformations to the dataframe.
     
     Parameters:
-        script_path: str: Path to the transformation script.
-        config: Dict[str, Any]: Config dictionary containing transformation parameters.
-        options: Dict[str, bool]: Options dictionary containing transformation options.
-        data: pd.DataFrame: Input dataframe to be transformed.
+        script_path: Path to transformation script(s) or list of paths
+        config: Config dictionary containing transformation parameters
+        data: Input dataframe to be transformed
+        options: Options dictionary containing transformation options
     
     Returns:
-        pd.DataFrame: Transformed dataframe.
+        pd.DataFrame: Transformed dataframe
     """
     if options is None:
         options = {
@@ -94,19 +109,45 @@ def transform_data(script_path: str, config: Dict[str, Any], data: pd.DataFrame,
         }
 
     try:
-        # Load external transformation script if provided
-        if script_path:
-            logger.info(f"Loading transformation script from {script_path}")
-            transform_script = load_transformation_script(script_path)
-            if hasattr(transform_script, "transform"):
-                with tqdm(total=1, desc="Applying Script Transformations", unit="step") as pbar:
-                    data = transform_script.transform(data)
-                    pbar.update(1)
-            else:
-                logger.warning("No transform function found in the script. Skipping script transformations.")
+        # Handle multiple script paths
+        script_paths = []
+        if isinstance(script_path, str):
+            if script_path and script_path.lower() not in ['none', 'null', '']:
+                script_paths = [script_path]
+        elif isinstance(script_path, list):
+            script_paths = [path for path in script_path if path and path.lower() not in ['none', 'null', '']]
+        
+        # Apply external transformation scripts if provided
+        for i, path in enumerate(script_paths):
+            logger.info(f"Loading transformation script {i+1}/{len(script_paths)}: {path}")
+            
+            try:
+                transform_script = load_transformation_script(path)
+                if hasattr(transform_script, "transform"):
+                    with tqdm(total=1, desc=f"Applying Script {i+1}", unit="step") as pbar:
+                        data = transform_script.transform(data, config.get('script_config', {}))
+                        pbar.update(1)
+                else:
+                    logger.warning(f"No transform function found in script {path}. Skipping.")
+            except Exception as e:
+                logger.error(f"Error in transformation script {path}: {str(e)}")
+                if config.get('fail_on_script_error', True):
+                    raise
+                else:
+                    logger.warning(f"Continuing with next script due to fail_on_script_error=False")
+        
+        # If no custom scripts provided, use default transformations
+        if not script_paths and config.get('use_default_transforms', True):
+            logger.info("No custom scripts provided, applying default transformations")
+            from app.default_transforms import transform as default_transform
+            with tqdm(total=1, desc="Applying Default Transformations", unit="step") as pbar:
+                data = default_transform(data, config.get('default_config', {}))
+                pbar.update(1)
 
         # Apply config-based transformations
-        data = apply_transformations(data, config, options)
+        if any(options.values()):
+            data = apply_transformations(data, config, options)
+        
         logger.info("Data transformation completed successfully.")
         return data
 

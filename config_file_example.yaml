@@ -1,0 +1,31 @@
+# PipeX Configuration for File-based ETL
+extract:
+  source: "file"
+  connection_details:
+    file_type: "csv"
+    encoding: "utf-8"
+    separator: ","
+  query_or_endpoint: "extracted_data.csv"
+
+transform:
+  script: "none" # No custom script, just config-based transformations
+  config:
+    drop_columns: ["id"]
+    rename_columns:
+      title: "article_title"
+      body: "article_body"
+    filter_rows: "article_title.str.len() > 10"
+    add_columns:
+      title_word_count: "article_title.str.split().str.len()"
+      is_long_article: "article_body.str.len() > 100"
+  options:
+    drop_columns: true
+    rename_columns: true
+    filter_rows: true
+    add_columns: true
+
+load:
+  target: "Local File"
+  config:
+    file_type: "json"
+    file_path: "output/processed_articles.json"

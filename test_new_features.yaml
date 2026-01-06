@@ -1,0 +1,35 @@
+# Test configuration for new PipeX features
+extract:
+  source: "api"
+  connection_details:
+    headers:
+      Authorization: "Bearer ${API_TOKEN}"
+    timeout: 30
+  query_or_endpoint: "${API_ENDPOINT}"
+
+transform:
+  scripts:
+    - "app/default_transforms.py"
+  config:
+    use_default_transforms: true
+    default_config:
+      clean_data: true
+      feature_engineering: true
+      add_metadata: true
+      cleaning:
+        remove_duplicates: true
+        standardize_text: true
+      features:
+        add_text_features: true
+        add_numeric_features: true
+      metadata:
+        add_timestamp: true
+        add_row_number: true
+
+load:
+  target: "Local File"
+  config:
+    file_type: "json"
+    file_path: "output/enhanced/processed_data.json"
+    add_timestamp: true
+    indent: 2

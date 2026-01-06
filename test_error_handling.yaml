@@ -1,0 +1,18 @@
+# Invalid configuration to test error handling
+extract:
+  # Missing source field
+  connection_details:
+    headers:
+      Authorization: "Bearer ${MISSING_TOKEN}"
+  query_or_endpoint: "${MISSING_ENDPOINT}"
+
+transform:
+  scripts:
+    - "nonexistent_script.py"
+  config:
+    drop_columns: ["nonexistent_column"]
+
+load:
+  target: "Invalid Target"
+  config:
+    file_path: "/invalid/path/file.csv"
