@@ -49,6 +49,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-${{ matrix.python-version }}-
 
+      - name: Validate TOML file
+        run: |
+          python -c "
+          try:
+              import tomllib
+          except ImportError:
+              import tomli as tomllib
+
+          with open('pyproject.toml', 'rb') as f:
+              config = tomllib.load(f)
+          print('✅ pyproject.toml is valid')
+          "
+
       - name: Install dependencies
         run: |
           poetry install --all-extras --with dev
