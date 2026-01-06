@@ -48,7 +48,7 @@ lxml = { version = "^5.0.0", optional = true }
 pyarrow = { version = "^17.0.0", optional = true }
 
 # Cloud storage (optional)
-boto3 = { version = "^1.35.0", optional = true }
+boto3 = { version = "^1.42.22", optional = true }
 google-cloud-storage = { version = "^2.10.0", optional = true }
 azure-storage-blob = { version = "^12.19.0", optional = true }
 
