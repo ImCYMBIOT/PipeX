@@ -5,12 +5,13 @@ This module provides a collection of common, configurable transformation functio
 that can be used as defaults or combined for complex data processing.
 """
 
-import pandas as pd
-import numpy as np
 import logging
-from typing import Dict, Any, List, Tuple
-from datetime import datetime
 import math
+from datetime import datetime
+from typing import Any, Dict, List, Tuple
+
+import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ def get_data_profile(df: pd.DataFrame) -> Dict[str, Any]:
     Generate comprehensive data profiling summary.
     """
     logger.info("Generating data profile...")
-    
+
     profile = {
         "shape": df.shape,
         "memory_usage_mb": df.memory_usage(deep=True).sum() / 1024 / 1024,
@@ -31,7 +32,7 @@ def get_data_profile(df: pd.DataFrame) -> Dict[str, Any]:
         "text_columns": df.select_dtypes(include=["object"]).columns.tolist(),
         "datetime_columns": df.select_dtypes(include=["datetime64[ns]"]).columns.tolist(),
     }
-    
+
     # Add basic statistics for numeric columns
     numeric_stats = {}
     for col in profile["numeric_columns"]:
@@ -43,10 +44,10 @@ def get_data_profile(df: pd.DataFrame) -> Dict[str, Any]:
             "std": df[col].std(),
             "zeros": (df[col] == 0).sum(),
             "negatives": (df[col] < 0).sum(),
-            "infinite": np.isinf(df[col]).sum()
+            "infinite": np.isinf(df[col]).sum(),
         }
     profile["numeric_stats"] = numeric_stats
-    
+
     # Add text column statistics
     text_stats = {}
     for col in profile["text_columns"]:
@@ -54,10 +55,10 @@ def get_data_profile(df: pd.DataFrame) -> Dict[str, Any]:
             "unique_values": df[col].nunique(),
             "most_common": df[col].mode().iloc[0] if not df[col].mode().empty else None,
             "avg_length": df[col].astype(str).str.len().mean(),
-            "empty_strings": (df[col] == "").sum()
+            "empty_strings": (df[col] == "").sum(),
         }
     profile["text_stats"] = text_stats
-    
+
     return profile
 
 
@@ -66,16 +67,16 @@ def process_in_chunks(df: pd.DataFrame, func, chunk_size: int, *args, **kwargs) 
     Process DataFrame in chunks for memory efficiency.
     """
     logger.info(f"Processing {len(df)} rows in chunks of {chunk_size}")
-    
+
     chunks = []
     for i in range(0, len(df), chunk_size):
-        chunk = df.iloc[i:i + chunk_size].copy()
+        chunk = df.iloc[i : i + chunk_size].copy()
         processed_chunk = func(chunk, *args, **kwargs)
         chunks.append(processed_chunk)
-        
+
         if i % (chunk_size * 10) == 0:  # Log progress every 10 chunks
             logger.info(f"Processed {min(i + chunk_size, len(df))} / {len(df)} rows")
-    
+
     result = pd.concat(chunks, ignore_index=True)
     logger.info(f"Chunk processing complete: {len(df)} → {len(result)} rows")
     return result
@@ -86,24 +87,24 @@ def apply_validation_rules(df: pd.DataFrame, validation_rules: Dict[str, Any]) -
     Apply configurable validation rules to the DataFrame.
     """
     logger.info("Applying validation rules...")
-    
+
     result_df = df.copy()
-    
+
     for rule_name, rule_config in validation_rules.items():
         try:
             rule_type = rule_config.get("type")
             column = rule_config.get("column")
-            
+
             if rule_type == "not_null":
                 initial_rows = len(result_df)
                 result_df = result_df[result_df[column].notna()]
                 logger.info(f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} null rows from '{column}'")
-                
+
             elif rule_type == "unique":
                 initial_rows = len(result_df)
                 result_df = result_df.drop_duplicates(subset=[column])
                 logger.info(f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} duplicate rows based on '{column}'")
-                
+
             elif rule_type == "range":
                 min_val = rule_config.get("min")
                 max_val = rule_config.get("max")
@@ -112,31 +113,37 @@ def apply_validation_rules(df: pd.DataFrame, validation_rules: Dict[str, Any]) -
                     result_df = result_df[result_df[column] >= min_val]
                 if max_val is not None:
                     result_df = result_df[result_df[column] <= max_val]
-                logger.info(f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} rows outside range [{min_val}, {max_val}] for '{column}'")
-                
+                logger.info(
+                    f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} rows outside range [{min_val}, {max_val}] for '{column}'"
+                )
+
             elif rule_type == "pattern":
                 pattern = rule_config.get("pattern")
                 initial_rows = len(result_df)
                 result_df = result_df[result_df[column].astype(str).str.match(pattern, na=False)]
-                logger.info(f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} rows not matching pattern for '{column}'")
-                
+                logger.info(
+                    f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} rows not matching pattern for '{column}'"
+                )
+
             elif rule_type == "length":
                 min_length = rule_config.get("min_length", 0)
-                max_length = rule_config.get("max_length", float('inf'))
+                max_length = rule_config.get("max_length", float("inf"))
                 initial_rows = len(result_df)
                 lengths = result_df[column].astype(str).str.len()
                 result_df = result_df[(lengths >= min_length) & (lengths <= max_length)]
-                logger.info(f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} rows with invalid length for '{column}'")
-                
+                logger.info(
+                    f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} rows with invalid length for '{column}'"
+                )
+
             elif rule_type == "custom":
                 condition = rule_config.get("condition")
                 initial_rows = len(result_df)
                 result_df = result_df.query(condition)
                 logger.info(f"Rule '{rule_name}': Removed {initial_rows - len(result_df)} rows not meeting custom condition")
-                
+
         except Exception as e:
             logger.error(f"Failed to apply validation rule '{rule_name}': {e}")
-            
+
     return result_df
 
 
@@ -148,13 +155,13 @@ def clean_data(data: pd.DataFrame, config: Dict[str, Any] = None) -> pd.DataFram
     logger.info("Applying standard data cleaning...")
 
     df = data.copy()  # Work on a copy to avoid mutating input unexpectedly
-    
+
     # Check if we should process in chunks
     chunk_threshold = config.get("chunk_threshold", 100000)
     if len(df) > chunk_threshold:
         chunk_size = config.get("chunk_size", 50000)
         return process_in_chunks(df, _clean_data_chunk, chunk_size, config)
-    
+
     return _clean_data_chunk(df, config)
 
 
@@ -271,8 +278,7 @@ def data_validation(data: pd.DataFrame, config: Dict[str, Any] = None) -> pd.Dat
             df = df[(df[column] >= min_val) & (df[column] <= max_val)]
             if len(df) < initial_rows:
                 logger.info(
-                    f"Filtered {initial_rows - len(df)} rows outside range [{min_val}, {max_val}] "
-                    f"for column '{column}'"
+                    f"Filtered {initial_rows - len(df)} rows outside range [{min_val}, {max_val}] " f"for column '{column}'"
                 )
 
     # Fix infinite values
@@ -286,12 +292,12 @@ def data_validation(data: pd.DataFrame, config: Dict[str, Any] = None) -> pd.Dat
     # Data quality checks
     if config.get("enable_quality_checks", True):
         quality_threshold = config.get("quality_threshold", 0.5)  # 50% completeness minimum
-        
+
         for col in df.columns:
             completeness = df[col].notna().sum() / len(df)
             if completeness < quality_threshold:
                 logger.warning(f"Column '{col}' has low completeness: {completeness:.2%}")
-                
+
                 if config.get("drop_low_quality_columns", False):
                     df = df.drop(columns=[col])
                     logger.info(f"Dropped low quality column '{col}'")
@@ -307,13 +313,13 @@ def feature_engineering(data: pd.DataFrame, config: Dict[str, Any] = None) -> pd
     logger.info("Applying feature engineering...")
 
     df = data.copy()
-    
+
     # Check if we should process in chunks for large datasets
     chunk_threshold = config.get("chunk_threshold", 100000)
     if len(df) > chunk_threshold:
         chunk_size = config.get("chunk_size", 50000)
         return process_in_chunks(df, _feature_engineering_chunk, chunk_size, config)
-    
+
     return _feature_engineering_chunk(df, config)
 
 
@@ -368,8 +374,7 @@ def _feature_engineering_chunk(df: pd.DataFrame, config: Dict[str, Any]) -> pd.D
 
     # Date features
     if config.get("add_date_features", False):
-        date_columns = config.get("date_columns") or df.select_dtypes(include=["datetime64[ns]", "datetime64"]
-).columns
+        date_columns = config.get("date_columns") or df.select_dtypes(include=["datetime64[ns]", "datetime64"]).columns
         for col in date_columns:
             if config.get("date_components", True):
                 df[f"{col}_year"] = df[col].dt.year
@@ -377,12 +382,12 @@ def _feature_engineering_chunk(df: pd.DataFrame, config: Dict[str, Any]) -> pd.D
                 df[f"{col}_day"] = df[col].dt.day
                 df[f"{col}_weekday"] = df[col].dt.dayofweek
                 df[f"{col}_is_weekend"] = df[col].dt.dayofweek >= 5
-            
+
             if config.get("date_periods", False):
                 df[f"{col}_quarter"] = df[col].dt.quarter
                 df[f"{col}_week_of_year"] = df[col].dt.isocalendar().week
                 df[f"{col}_day_of_year"] = df[col].dt.dayofyear
-            
+
             if config.get("date_time_features", False):
                 df[f"{col}_hour"] = df[col].dt.hour
                 df[f"{col}_minute"] = df[col].dt.minute
@@ -392,7 +397,7 @@ def _feature_engineering_chunk(df: pd.DataFrame, config: Dict[str, Any]) -> pd.D
     if config.get("add_interaction_features", False):
         interaction_pairs = config.get("interaction_pairs", [])
         numeric_columns = df.select_dtypes(include=[np.number]).columns
-        
+
         for col1, col2 in interaction_pairs:
             if col1 in df.columns and col2 in df.columns:
                 if col1 in numeric_columns and col2 in numeric_columns:
@@ -453,9 +458,11 @@ def transform(data: pd.DataFrame, config: Dict[str, Any] = None) -> pd.DataFrame
     # Generate initial data profile if requested
     if config.get("profile_data", False):
         initial_profile = get_data_profile(df)
-        logger.info(f"Initial data profile: {initial_profile['shape']} shape, "
-                   f"{initial_profile['memory_usage_mb']:.2f} MB, "
-                   f"{initial_profile['duplicate_rows']} duplicates")
+        logger.info(
+            f"Initial data profile: {initial_profile['shape']} shape, "
+            f"{initial_profile['memory_usage_mb']:.2f} MB, "
+            f"{initial_profile['duplicate_rows']} duplicates"
+        )
 
     try:
         # Recommended order: validate → clean → engineer → metadata
@@ -478,16 +485,20 @@ def transform(data: pd.DataFrame, config: Dict[str, Any] = None) -> pd.DataFrame
         # Generate final data profile if requested
         if config.get("profile_data", False):
             final_profile = get_data_profile(df)
-            logger.info(f"Final data profile: {final_profile['shape']} shape, "
-                       f"{final_profile['memory_usage_mb']:.2f} MB, "
-                       f"{final_profile['duplicate_rows']} duplicates")
-            
+            logger.info(
+                f"Final data profile: {final_profile['shape']} shape, "
+                f"{final_profile['memory_usage_mb']:.2f} MB, "
+                f"{final_profile['duplicate_rows']} duplicates"
+            )
+
             # Log transformation summary
-            logger.info(f"Transformation summary: "
-                       f"Rows: {original_shape[0]} → {df.shape[0]} "
-                       f"({((df.shape[0] - original_shape[0]) / original_shape[0] * 100):+.1f}%), "
-                       f"Columns: {original_shape[1]} → {df.shape[1]} "
-                       f"({((df.shape[1] - original_shape[1]) / original_shape[1] * 100):+.1f}%)")
+            logger.info(
+                f"Transformation summary: "
+                f"Rows: {original_shape[0]} → {df.shape[0]} "
+                f"({((df.shape[0] - original_shape[0]) / original_shape[0] * 100):+.1f}%), "
+                f"Columns: {original_shape[1]} → {df.shape[1]} "
+                f"({((df.shape[1] - original_shape[1]) / original_shape[1] * 100):+.1f}%)"
+            )
 
         logger.info(f"Default transformation complete: {original_shape} → {df.shape}")
         return df
@@ -513,12 +524,7 @@ def business_rules_transform(data: pd.DataFrame, rules: Dict[str, Any]) -> pd.Da
                 agg_col = rule_config["column"]
                 agg_func = rule_config["function"]
                 result_name = rule_config["result_name"]
-                agg_result = (
-                    df.groupby(group_by)[agg_col]
-                    .agg(agg_func)
-                    .reset_index()
-                    .rename(columns={agg_col: result_name})
-                )
+                agg_result = df.groupby(group_by)[agg_col].agg(agg_func).reset_index().rename(columns={agg_col: result_name})
                 df = df.merge(agg_result, on=group_by, how="left")
             logger.info(f"Applied business rule: {rule_name}")
         except Exception as e:
@@ -526,9 +532,7 @@ def business_rules_transform(data: pd.DataFrame, rules: Dict[str, Any]) -> pd.Da
     return df
 
 
-def industry_specific_transform(
-    data: pd.DataFrame, industry: str, config: Dict[str, Any] = None
-) -> pd.DataFrame:
+def industry_specific_transform(data: pd.DataFrame, industry: str, config: Dict[str, Any] = None) -> pd.DataFrame:
     config = config or {}
     logger.info(f"Applying {industry} industry transformations...")
     df = data.copy()
