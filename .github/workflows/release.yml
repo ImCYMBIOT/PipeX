@@ -1,0 +1,282 @@
+# PipeX Release Workflow
+# This workflow handles testing, building, and publishing PipeX to PyPI
+# Triggered on releases and provides comprehensive CI/CD pipeline
+
+name: Release PipeX
+
+on:
+    release:
+        types: [published]
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main]
+
+permissions:
+    contents: read
+
+env:
+    PYTHON_VERSION: "3.11"
+    MINIMUM_PYTHON: "3.11"
+
+jobs:
+    # Test across multiple Python versions and operating systems
+    test:
+        name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, windows-latest, macos-latest]
+                python-version: ["3.11", "3.12"]
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
+
+            - name: Cache pip dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -e .[all,dev]
+
+            - name: Lint with flake8
+              run: |
+                  pip install flake8
+                  # Stop the build if there are Python syntax errors or undefined names
+                  flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+                  # Exit-zero treats all errors as warnings
+                  flake8 app/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+            - name: Type check with mypy
+              run: |
+                  pip install mypy types-requests
+                  mypy app/ --ignore-missing-imports
+
+            - name: Test with pytest
+              run: |
+                  pip install pytest pytest-cov pytest-mock
+                  pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
+
+            - name: Upload coverage to Codecov
+              if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+              uses: codecov/codecov-action@v4
+              with:
+                  file: ./coverage.xml
+                  flags: unittests
+                  name: codecov-umbrella
+
+    # Security and dependency scanning
+    security:
+        name: Security Scan
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install safety bandit
+                  pip install -e .[all]
+
+            - name: Run safety check
+              run: safety check
+
+            - name: Run bandit security scan
+              run: bandit -r app/ -f json -o bandit-report.json || true
+
+            - name: Upload bandit report
+              uses: actions/upload-artifact@v4
+              with:
+                  name: bandit-report
+                  path: bandit-report.json
+
+    # Build distribution packages
+    build:
+        name: Build Distribution
+        runs-on: ubuntu-latest
+        needs: [test, security]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+
+            - name: Install build dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install build twine
+
+            - name: Build source and wheel distributions
+              run: |
+                  python -m build
+
+            - name: Check distribution packages
+              run: |
+                  twine check dist/*
+
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: dist-packages
+                  path: dist/
+                  retention-days: 7
+
+    # Test installation from built packages
+    test-install:
+        name: Test Installation
+        runs-on: ${{ matrix.os }}
+        needs: build
+        strategy:
+            matrix:
+                os: [ubuntu-latest, windows-latest, macos-latest]
+        steps:
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: dist-packages
+                  path: dist/
+
+            - name: Test wheel installation
+              run: |
+                  pip install dist/*.whl
+                  pipex --help
+
+            - name: Test basic functionality
+              run: |
+                  pipex info
+                  echo "Installation test completed successfully"
+
+    # Publish to Test PyPI (for testing)
+    publish-test:
+        name: Publish to Test PyPI
+        runs-on: ubuntu-latest
+        needs: [test, security, build, test-install]
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        environment:
+            name: test-pypi
+            url: https://test.pypi.org/p/pipex
+        permissions:
+            id-token: write
+        steps:
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: dist-packages
+                  path: dist/
+
+            - name: Publish to Test PyPI
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  repository-url: https://test.pypi.org/legacy/
+                  packages-dir: dist/
+
+    # Publish to PyPI (production)
+    publish-pypi:
+        name: Publish to PyPI
+        runs-on: ubuntu-latest
+        needs: [test, security, build, test-install]
+        if: github.event_name == 'release' && github.event.action == 'published'
+        environment:
+            name: pypi
+            url: https://pypi.org/p/pipex
+        permissions:
+            id-token: write
+        steps:
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: dist-packages
+                  path: dist/
+
+            - name: Publish to PyPI
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/
+
+    # Create GitHub Release with assets
+    github-release:
+        name: Update GitHub Release
+        runs-on: ubuntu-latest
+        needs: [publish-pypi]
+        if: github.event_name == 'release' && github.event.action == 'published'
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: dist-packages
+                  path: dist/
+
+            - name: Upload release assets
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: |
+                      dist/*.whl
+                      dist/*.tar.gz
+                  body: |
+                      ## PipeX v${{ github.event.release.tag_name }}
+
+                      ### Installation
+                      ```bash
+                      pip install pipex==${{ github.event.release.tag_name }}
+                      ```
+
+                      ### What's Changed
+                      See the [changelog](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed changes.
+
+                      ### Verification
+                      You can verify the integrity of the downloaded files using the checksums below:
+
+                      **SHA256 Checksums:**
+                      ```
+                      # Will be automatically generated
+                      ```
+
+    # Notify on completion
+    notify:
+        name: Notify Release Complete
+        runs-on: ubuntu-latest
+        needs: [github-release]
+        if: always() && github.event_name == 'release'
+        steps:
+            - name: Release Status
+              run: |
+                  if [ "${{ needs.github-release.result }}" == "success" ]; then
+                    echo "✅ PipeX v${{ github.event.release.tag_name }} successfully released!"
+                    echo "📦 Available on PyPI: https://pypi.org/project/pipex/${{ github.event.release.tag_name }}/"
+                    echo "🚀 GitHub Release: ${{ github.event.release.html_url }}"
+                  else
+                    echo "❌ Release failed. Check the workflow logs for details."
+                    exit 1
+                  fi

@@ -1,0 +1,98 @@
+# Continuous Deployment - Publishes every commit to PyPI
+# Uses timestamp-based versioning for development releases
+
+name: Continuous Deploy
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "app/**"
+            - "pyproject.toml"
+
+permissions:
+    contents: write
+    id-token: write
+
+env:
+    PYTHON_VERSION: "3.11"
+
+jobs:
+    continuous-deploy:
+        name: Auto Deploy to PyPI
+        runs-on: ubuntu-latest
+        environment:
+            name: pypi
+            url: https://pypi.org/p/pipex
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: latest
+                  virtualenvs-create: true
+                  virtualenvs-in-project: true
+
+            - name: Install dependencies
+              run: |
+                  poetry install --all-extras
+
+            - name: Generate development version
+              id: version
+              run: |
+                  # Get base version from pyproject.toml (Poetry format)
+                  base_version=$(poetry version --short)
+
+                  # Create development version with timestamp and commit hash
+                  timestamp=$(date +%Y%m%d%H%M%S)
+                  commit_hash=$(git rev-parse --short HEAD)
+                  dev_version="${base_version}.dev${timestamp}+${commit_hash}"
+
+                  echo "Base version: $base_version"
+                  echo "Development version: $dev_version"
+                  echo "version=$dev_version" >> $GITHUB_OUTPUT
+
+                  # Update version using Poetry
+                  poetry version $dev_version
+
+            - name: Quick test
+              run: |
+                  poetry run python -c "import app.cli; print('✅ Import successful')"
+                  poetry run pipex --help
+
+            - name: Build package
+              run: |
+                  poetry build
+                  ls -la dist/
+
+            - name: Check package
+              run: |
+                  pip install twine
+                  twine check dist/*
+
+            - name: Publish to PyPI
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/
+
+            - name: Create deployment tag
+              run: |
+                  git config --local user.email "action@github.com"
+                  git config --local user.name "GitHub Action"
+                  git tag "deploy-${{ steps.version.outputs.version }}"
+                  git push origin "deploy-${{ steps.version.outputs.version }}"
+
+            - name: Notify deployment
+              run: |
+                  echo "🚀 Deployed PipeX ${{ steps.version.outputs.version }} to PyPI"
+                  echo "📦 Install with: pip install pipex==${{ steps.version.outputs.version }}"
+                  echo "🔗 PyPI: https://pypi.org/project/pipex/${{ steps.version.outputs.version }}/"
