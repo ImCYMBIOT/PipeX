@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Import checks
+        run: |
+          poetry run python -c "import pipex"
+          poetry run python -c "import pipex.cli"
+          poetry run python -c "import pipex.default_transforms"
+
+      - name: CLI smoke test
+        run: poetry run pipex --help
