@@ -24,6 +24,14 @@
 - [x] Added basic import tests
 - [x] Configured for PyPI trusted publishing
 
+## 🔧 **Recent Fix Applied**
+
+### **✅ Fixed psycopg2 Build Issue**
+
+- **Problem**: Workflow failing due to missing PostgreSQL development headers
+- **Solution**: Changed `psycopg2` to `psycopg2-binary` in pyproject.toml
+- **Result**: No more build dependencies required, cleaner installation
+
 ## 🚀 **Ready to Release!**
 
 ### **Next Steps:**
