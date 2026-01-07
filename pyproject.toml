@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PipeX"
-version = "0.2.0"
+version = "2.0.0"
 description = "A powerful CLI-based ETL (Extract, Transform, Load) pipeline automation tool for data engineering workflows"
 authors = ["ImCYMBIOT <agniveshkumar15@gmail.com>"]
 license = "MIT"

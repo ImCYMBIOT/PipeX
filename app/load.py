@@ -10,14 +10,36 @@ This module provides functions to load data to various targets:
 
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-import boto3
 import pandas as pd
-from botocore.exceptions import ClientError, NoCredentialsError
 from dotenv import load_dotenv
-from pymongo import MongoClient
-from sqlalchemy import create_engine
+
+# Optional imports for cloud storage
+try:
+    import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError
+    HAS_AWS = True
+except ImportError:
+    HAS_AWS = False
+    boto3 = None
+    ClientError = Exception
+    NoCredentialsError = Exception
+
+# Optional imports for databases
+try:
+    from pymongo import MongoClient
+    HAS_MONGODB = True
+except ImportError:
+    HAS_MONGODB = False
+    MongoClient = None
+
+try:
+    from sqlalchemy import create_engine
+    HAS_SQLALCHEMY = True
+except ImportError:
+    HAS_SQLALCHEMY = False
+    create_engine = None
 
 # Load environment variables from .env file
 load_dotenv()

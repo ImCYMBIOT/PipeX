@@ -22,38 +22,46 @@ load_dotenv()
 # Setup basic logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
+# Import core modules that don't have optional dependencies
 from .api import APIClient
-
-# Import new modules
-from .cloud_storage import download_from_cloud, get_cloud_provider, upload_to_cloud
 from .default_transforms import add_metadata, clean_data, data_validation, feature_engineering
 from .default_transforms import transform as default_transform
 from .error_handler import ErrorHandler, PipeXError, handle_pipeline_error
+from .utils import apply_env_variables, get_env_variable, load_config, setup_logging, validate_config, validate_data_schema
 
 # Import main functions
 from .extract import extract_data
-from .load import load_data
-from .storage import download_from_s3, file_exists_in_s3, save_and_upload, save_to_file, upload_to_s3
 from .transform import transform_data
-from .utils import apply_env_variables, get_env_variable, load_config, setup_logging, validate_config, validate_data_schema
 
-__version__ = "0.2.0"
+# Conditional imports for modules with optional dependencies
+try:
+    from .load import load_data
+    HAS_LOAD = True
+except ImportError:
+    HAS_LOAD = False
+    load_data = None
 
+try:
+    from .storage import download_from_s3, file_exists_in_s3, save_and_upload, save_to_file, upload_to_s3
+    HAS_STORAGE = True
+except ImportError:
+    HAS_STORAGE = False
+    download_from_s3 = file_exists_in_s3 = save_and_upload = save_to_file = upload_to_s3 = None
+
+try:
+    from .cloud_storage import download_from_cloud, get_cloud_provider, upload_to_cloud
+    HAS_CLOUD_STORAGE = True
+except ImportError:
+    HAS_CLOUD_STORAGE = False
+    download_from_cloud = get_cloud_provider = upload_to_cloud = None
+
+__version__ = "2.0.0"
+
+# Build __all__ list dynamically based on available imports
 __all__ = [
-    # Core ETL functions
+    # Core ETL functions (always available)
     "extract_data",
     "transform_data",
-    "load_data",
-    # Storage functions
-    "save_to_file",
-    "upload_to_s3",
-    "download_from_s3",
-    "file_exists_in_s3",
-    "save_and_upload",
-    # Cloud storage
-    "get_cloud_provider",
-    "upload_to_cloud",
-    "download_from_cloud",
     # API client
     "APIClient",
     # Utility functions
@@ -76,3 +84,23 @@ __all__ = [
     # Version
     "__version__",
 ]
+
+# Add conditional exports
+if HAS_LOAD:
+    __all__.append("load_data")
+
+if HAS_STORAGE:
+    __all__.extend([
+        "save_to_file",
+        "upload_to_s3",
+        "download_from_s3",
+        "file_exists_in_s3",
+        "save_and_upload",
+    ])
+
+if HAS_CLOUD_STORAGE:
+    __all__.extend([
+        "get_cloud_provider",
+        "upload_to_cloud",
+        "download_from_cloud",
+    ])

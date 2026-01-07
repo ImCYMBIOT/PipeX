@@ -11,13 +11,32 @@ This module provides functions to extract data from various sources:
 import logging
 from typing import Any, Dict, Optional
 
-import mysql.connector
 import pandas as pd
-import psycopg2
 import requests
-from pymongo import MongoClient
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+# Optional database imports
+try:
+    import mysql.connector
+    HAS_MYSQL = True
+except ImportError:
+    HAS_MYSQL = False
+    mysql = None
+
+try:
+    import psycopg2
+    HAS_POSTGRES = True
+except ImportError:
+    HAS_POSTGRES = False
+    psycopg2 = None
+
+try:
+    from pymongo import MongoClient
+    HAS_MONGODB = True
+except ImportError:
+    HAS_MONGODB = False
+    MongoClient = None
 
 logger = logging.getLogger(__name__)
 
