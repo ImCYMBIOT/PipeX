@@ -1,32 +1,50 @@
 name: CI
 
 on:
-  push:
-  pull_request:
+    push:
+    pull_request:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+    test:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: latest
+                  virtualenvs-create: true
+                  virtualenvs-in-project: true
 
-      - name: Install dependencies
-        run: poetry install --no-interaction
+            - name: Validate pyproject.toml
+              run: |
+                  python -c "
+                  try:
+                      import tomllib
+                  except ImportError:
+                      import tomli as tomllib
 
-      - name: Import checks
-        run: |
-          poetry run python -c "import pipex"
-          poetry run python -c "import pipex.cli"
-          poetry run python -c "import pipex.default_transforms"
+                  with open('pyproject.toml', 'rb') as f:
+                      config = tomllib.load(f)
+                  print('✅ pyproject.toml is valid')
+                  print(f'📦 Building {config[\"tool\"][\"poetry\"][\"name\"]} v{config[\"tool\"][\"poetry\"][\"version\"]}')
+                  "
 
-      - name: CLI smoke test
-        run: poetry run pipex --help
+            - name: Install dependencies
+              run: poetry install --no-interaction
+
+            - name: Import checks
+              run: |
+                  poetry run python -c "import app.cli; print('✅ CLI import successful')"
+                  poetry run python -c "import app.default_transforms; print('✅ Transforms import successful')"
+                  poetry run python -c "from app.cli import app; print('✅ CLI app import successful')"
+
+            - name: CLI smoke test
+              run: poetry run pipex --help
