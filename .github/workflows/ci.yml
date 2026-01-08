@@ -40,6 +40,30 @@ jobs:
             - name: Install dependencies
               run: poetry install --no-interaction
 
+            - name: Security audit
+              run: |
+                  # Check for known security vulnerabilities
+                  poetry run pip list --format=json | python -c "
+                  import json, sys
+                  packages = json.load(sys.stdin)
+                  print('📋 Installed packages:')
+                  for pkg in packages:
+                      if pkg['name'] in ['urllib3', 'requests', 'cryptography']:
+                          print(f'  {pkg[\"name\"]}: {pkg[\"version\"]}')
+                  "
+
+                  # Verify urllib3 version is secure
+                  poetry run python -c "
+                  import urllib3
+                  version = urllib3.__version__
+                  major, minor, patch = map(int, version.split('.'))
+                  if major > 2 or (major == 2 and minor > 6) or (major == 2 and minor == 6 and patch >= 3):
+                      print(f'✅ urllib3 {version} is secure (>= 2.6.3)')
+                  else:
+                      print(f'❌ urllib3 {version} is vulnerable (< 2.6.3)')
+                      exit(1)
+                  "
+
             - name: Import checks
               run: |
                   poetry run python -c "import app.cli; print('✅ CLI import successful')"

@@ -32,6 +32,7 @@ tqdm = "^4.67.0"
 
 # HTTP and API clients
 requests = "^2.32.0"
+urllib3 = "^2.6.3"  # Security fix for decompression bomb vulnerability
 cachetools = "^5.5.0"
 
 # Database connectors

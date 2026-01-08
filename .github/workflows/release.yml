@@ -26,14 +26,40 @@ jobs:
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
       - name: Validate pyproject.toml
         run: |
           python -c "
-          import tomllib
+          try:
+              import tomllib
+          except ImportError:
+              import tomli as tomllib
+
           with open('pyproject.toml', 'rb') as f:
               config = tomllib.load(f)
-          print('📦 Building', config['tool']['poetry']['name'], config['tool']['poetry']['version'])
+          print('✅ pyproject.toml is valid')
+          print(f'📦 Building {config[\"tool\"][\"poetry\"][\"name\"]} v{config[\"tool\"][\"poetry\"][\"version\"]}')
+          "
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Security audit
+        run: |
+          echo "🔍 Security audit..."
+          poetry run python -c "
+          import urllib3
+          version = urllib3.__version__
+          major, minor, patch = map(int, version.split('.'))
+          if major > 2 or (major == 2 and minor > 6) or (major == 2 and minor == 6 and patch >= 3):
+              print(f'✅ urllib3 {version} is secure (>= 2.6.3)')
+          else:
+              print(f'❌ urllib3 {version} is vulnerable (< 2.6.3)')
+              exit(1)
           "
 
       - name: Build package
